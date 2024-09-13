@@ -5,7 +5,7 @@ CXX = g++
 CXXFLAGS = -Wall -g
 
 # 定义输出文件名
-TARGET = hello.out
+TARGET = hello
 
 # 默认目标
 all: $(TARGET)
