@@ -16,15 +16,15 @@ head = nullptr;
 currentPos = nullptr;
 ```
 - 如果链表有两个及以上元素，在删除currentPos所指节点后，可以通过输入Flag选择currentPos指向的节点，即
+
 $$
-\begin{equation}
 currentPos =  
 \begin{cases}
-& prev （取前节点）\quad if \quad Flag== true \\
-& next （取后节点）\quad if \quad Flag== false
+prev & \text{（取前节点）} \quad \text{if} \quad \text{Flag} == \text{true} \\
+next & \text{（取后节点）} \quad \text{if} \quad \text{Flag} == \text{false}
 \end{cases}
-\end{equation}
 $$
+
 注意：若currentPos指向的节点为最后一个节点，则删除该节点后默认将currentPos指向删除后链表的最后一个节点（即删除之前的链表的倒数第二个节点）；同理，若currentPos指向的节点为第一个节点，则删除该节点后默认将currentPos指向删除后链表的第一个节点（即删除之前的链表的第二个节点）
 
 ## 程序代码
