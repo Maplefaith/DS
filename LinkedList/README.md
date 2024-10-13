@@ -9,7 +9,7 @@ void SingleLinkedList<T>::remove(bool Flag);
 ```
 功能为：
 - 如果是空链表，或者currentPos指向nullptr（当然在我们设计的功能里，用户并不能在一个有元素的链表里，尝试让currentPos指向nullptr），则不进行操作
-- 如果仅有一个元素，则删除后成为空链表，表现为
+- 如果仅有一个元素，则删除后成为空链表，其他指标修改为
 ```c++
 size = 0;
 head = nullptr;
@@ -70,7 +70,7 @@ void SingleLinkedList<T>::remove(bool Flag)
     SingleLinkedList<double> c1 = {1,2,3,4,5,6,7,8,9,10};
     c1.printList();std::cout<<"cur: "<<c1.getCurrentVal()<<std::endl;
     // 预计得到：
-    //1       2       3       4       5       6       7       8       9       10
+    // 1       2       3       4       5       6       7       8       9       10
 
     // 验证删除之后再向后移currentPos，当currentPos指向最后一个元素
     c1.remove(false);std::cout<<"After removal: "<<"backward"<<std::endl;
