@@ -1,0 +1,233 @@
+\documentclass[UTF8]{ctexart}
+\usepackage{geometry, CJKutf8}
+\geometry{margin=1.5cm, vmargin={0pt,1cm}}
+\setlength{\topmargin}{-1cm}
+\setlength{\paperheight}{29.7cm}
+\setlength{\textheight}{25.3cm}
+
+% useful packages.
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumerate}
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage{fancyhdr}
+\usepackage{layout}
+\usepackage{listings}
+\usepackage{float, caption}
+\usepackage[dvipsnames]{xcolor}
+\lstset{
+    basicstyle=\ttfamily, basewidth=0.5em
+}
+
+% some common command
+\newcommand{\dif}{\mathrm{d}}
+\newcommand{\avg}[1]{\left\langle #1 \right\rangle}
+\newcommand{\difFrac}[2]{\frac{\dif #1}{\dif #2}}
+\newcommand{\pdfFrac}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\OFL}{\mathrm{OFL}}
+\newcommand{\UFL}{\mathrm{UFL}}
+\newcommand{\fl}{\mathrm{fl}}
+\newcommand{\op}{\odot}
+\newcommand{\Eabs}{E_{\mathrm{abs}}}
+\newcommand{\Erel}{E_{\mathrm{rel}}}
+
+\begin{document}
+
+\pagestyle{fancy}
+\fancyhead{}
+\lhead{涂轩丞, 3220103624}
+\chead{数据结构与算法第四次作业}
+\rhead{Oct.20th, 2024}
+
+\section{测试程序的设计思路}
+在\texttt{List.cpp}中，我实现了以下测试。
+\subsection*{1. 构造函数与赋值操作符的测试}
+首先，我通过初始化列表的方式创建了\texttt{list1}，这验证了\texttt{List}的初始化列表构造函数的正确性。接着，我对\texttt{list1}使用拷贝构造生成了\texttt{list2}，用于测试拷贝构造函数的行为。
+
+随后，我创建了一个空的\texttt{list4}，通过默认构造函数进行初始化，并将\texttt{list1}赋值给\texttt{list4}，以验证拷贝赋值操作符的功能。在这个过程前后，我直接接入了empty()函数的测试。
+
+最后，我通过\texttt{std::move}将\texttt{list4}的资源移动到\texttt{list5}，测试移动赋值操作符的实现是否正确。
+
+\subsection*{2. 容器基本操作的测试}
+在第二部分，我主要测试\texttt{List}容器的基础操作方法。首先，调用\texttt{size()}函数获取\texttt{list1}的大小，以验证\texttt{size}方法是否正确返回元素个数。随后，利用\texttt{push\_back()}和\texttt{push\_front()}函数，分别在列表的尾部和头部插入新元素，并通过\texttt{pop\_back()}和\texttt{pop\_front()}删除尾部和头部元素，验证这些操作的行为。
+
+我还测试了\texttt{clear()}函数，通过调用该函数清空\texttt{list1}的所有元素，并验证容器是否正确更新为空。
+
+\subsection*{3. 插入与删除的测试}
+在这一部分，我构建了一个新的列表\texttt{list6}，并通过遍历获取迭代器，移动到特定位置。然后，利用\texttt{insert()}方法在指定位置插入一个元素，并验证插入后的列表结构。紧接着，我通过\texttt{erase()}方法删除相应位置的元素，确保删除操作的正确性。
+
+\subsection*{4. 迭代器与元素访问的测试}
+这一部分测试了\texttt{List}类的迭代器功能。我创建了\texttt{list7}，并通过\texttt{front()}和\texttt{back()}函数分别获取列表的首尾元素，确保这些访问函数的正确实现。接着，使用迭代器遍历\texttt{list7}，通过\texttt{++}和\texttt{--}操作符移动迭代器，验证迭代器的功能和行为。
+
+\subsection*{5. 常量迭代器的测试}
+为了测试\texttt{const\_iterator}的行为，我创建了一个常量列表\texttt{const\_list}，并使用常量迭代器遍历该列表，确保常量迭代器的功能正常，且无法对常量列表进行修改。
+
+\subsection*{6. 移动语义的测试}
+在最后一部分，我测试了字符串列表\texttt{stringList}的\texttt{push\_back()}和\texttt{push\_front()}操作，并分别使用左值和右值插入字符串元素，验证\texttt{List}类是否正确处理了左值和右值的插入操作。这部分确保了移动语义的正确实现。
+
+\section{测试的结果}
+
+测试结果一切正常。
+
+输出如下：
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+    初始化列表构造list1: 1 2 3 4 5 
+    拷贝构造list2: 1 2 3 4 5 
+    默认构造list4: 
+    利用list4验证一下empty(): 1
+    将list1拷贝赋值到list4: 1 2 3 4 5 
+    再利用list4验证一下empty(): 0
+    将list4移动赋值到list5: 1 2 3 4 5 
+    ------------------------------
+    测试size()函数——5
+    在list1末尾插入元素6: 1 2 3 4 5 6 
+    再在list1开头插入元素0: 0 1 2 3 4 5 6 
+    再测试size()函数——7
+    删除list1末尾的元素: 0 1 2 3 4 5 
+    删除list1开头的元素: 1 2 3 4 5 
+    调用clear函数清空list1的元素: 
+    此时的Size为0
+    ------------------------------
+    现在对于list6: 1 2 3 4 
+    在list6的第二个元素之前插入元素100: 1 100 2 3 4 
+    删除list6的第二个元素: 1 2 3 4 
+    ------------------------------
+    现在对于list7: 10 20 30 40 
+    测试front函数得到list7的第一个元素: 10
+    测试back函数得到list7的最后一个元素: 40
+    初始化迭代器，并通过*得到list7的第一个元素: 10
+    利用++操作符得到list7的第二个元素: 20
+    再利用--操作符得到list7的第一个元素: 10
+    ------------------------------
+    测试const_list并利用const_it得到第二个元素: 60
+    ------------------------------
+    经过左右值push_back和push_front, 得到stringList: Hello Start Hello World
+\end{lstlisting}
+
+我用 \texttt{valgrind} 进行测试，发现没有发生内存泄露。
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+    ==53901== 
+    ==53901== HEAP SUMMARY:
+    ==53901==     in use at exit: 0 bytes in 0 blocks
+    ==53901==   total heap usage: 149 allocs, 149 frees, 77,544 bytes allocated
+    ==53901== 
+    ==53901== All heap blocks were freed -- no leaks are possible
+    ==53901== 
+    ==53901== For lists of detected and suppressed errors, rerun with: -s
+    ==53901== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+\end{lstlisting}
+\section{（可选）bug报告}
+\subsection{自增自减运算符忽视可能指向空指针}
+
+\subsubsection{触发条件}
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+    // 测试在链表末尾自增指针
+    List<int> list={1,2,3,4};
+    auto it = list.end();
+    ++it;
+    ++it;
+    // 结果输出
+    [1]    12565 segmentation fault (core dumped)
+\end{lstlisting}
+\subsubsection{原因分析}
+由源代码可知，发现自增自减运算符并没有考虑迭代器指向空指针后产生的一系列问题。
+\subsubsection{解决方案}
+在自增（自减）运算符操作前，要先判断后指针（前指针）是否是空指针nullptr。因此可以将代码修改为如下：
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+    iterator &operator--(){
+        if(this->current->prev!=nullptr)
+            this->current = this->current->prev;
+        return *this;
+    }
+    iterator &operator++(){
+        if(this->current->next!=nullptr)
+            this->current = this->current->next;
+        return *this;
+    }
+\end{lstlisting}
+之后再进行测试，在现在的List类提供的一系列函数操作下，不会出现迭代器指向空指针的情况（除非在erase操作后进行解引用，但这个需要用户自己小心），从而避免之后的误操作。
+
+\subsection{赋值拷贝函数没有考虑自赋值}
+\subsubsection{触发条件}
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+    #include <list>
+    #include "List.h"
+    #include <chrono>
+    #include <thread>
+
+    List<int> largeList;
+    std::list<int> largelist;
+    for (int i = 0; i < 100000; ++i) {
+        largeList.push_back(i);
+        largelist.push_back(i);
+    }
+    // 测试List自赋值时间
+    auto start = std::chrono::high_resolution_clock::now();
+    largeList = largeList;
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed = end - start;
+    std::cout << "List copy: " << elapsed.count() << " 毫秒" << std::endl;
+    // 测试list自赋值时间
+    auto start1 = std::chrono::high_resolution_clock::now();
+    largelist = largelist;
+    auto end1 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed1 = end1 - start1;
+    std::cout << "list copy: " << elapsed1.count() << " 毫秒" << std::endl;
+    // 结果输出（不同配置会有不同的输出，但是前后的数量级都会有明显差别）
+    List copy: 5.49066 毫秒
+    list copy: 6e-05 毫秒
+\end{lstlisting}
+\subsubsection{原因分析}
+自赋值的时候已经很好地考虑了左值和右值的赋值，但是忘记了自赋值并没有考虑，导致很多时间会被浪费。
+\subsubsection{解决方案}
+考虑对左值和右值两种情况进行分类讨论。左值采用拷贝构造（其中要检测是否是自身），右值采用移动构造。
+
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
