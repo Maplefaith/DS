@@ -1,0 +1,108 @@
+\documentclass[UTF8]{ctexart}
+\usepackage{geometry, CJKutf8}
+\geometry{margin=1.5cm, vmargin={0pt,1cm}}
+\setlength{\topmargin}{-1cm}
+\setlength{\paperheight}{29.7cm}
+\setlength{\textheight}{25.3cm}
+
+% useful packages.
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumerate}
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage{fancyhdr}
+\usepackage{layout}
+\usepackage{listings}
+\usepackage{float, caption}
+\usepackage[dvipsnames]{xcolor}
+\lstset{
+    basicstyle=\ttfamily, basewidth=0.5em
+}
+
+% some common command
+\newcommand{\dif}{\mathrm{d}}
+\newcommand{\avg}[1]{\left\langle #1 \right\rangle}
+\newcommand{\difFrac}[2]{\frac{\dif #1}{\dif #2}}
+\newcommand{\pdfFrac}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\OFL}{\mathrm{OFL}}
+\newcommand{\UFL}{\mathrm{UFL}}
+\newcommand{\fl}{\mathrm{fl}}
+\newcommand{\op}{\odot}
+\newcommand{\Eabs}{E_{\mathrm{abs}}}
+\newcommand{\Erel}{E_{\mathrm{rel}}}
+
+\begin{document}
+
+\pagestyle{fancy}
+\fancyhead{}
+\lhead{Maplefatih, 3220103624}
+\chead{数据结构与算法第六次作业}
+\rhead{Nov.9th, 2024}
+
+\section{remove函数的设计思路}
+设计思路和上次类似，重点在于通过指针操作完成后，对部分节点进行调整。\texttt{balance()}已经包含了高度调整和各类旋转操作，具体详见代码。要调整的节点可分为两类：
+\begin{itemize}
+    \item \textbf{被删除节点所在位置节点及其父节点}。这一点要求我们在递归回调时进行\texttt{balance()}，故放在函数\texttt{remove()}的删除节点操作之后，调用函数结束（无返回值）之前。
+    \item \textbf{右子树最小元节点所在位置节点及其父节点}。被移动后，原所在位置被替换为新节点，故也可能影响树的结构。这一点要求我们不仅利用递归来查找右子树最小元节点（不使用循环来查找），而且在函数返回前，进行树的调整。故\texttt{balance()}放在\texttt{current}节点更新完成后，调用函数结束（有返回值）之前。
+\end{itemize}
+
+具体代码参考如下。
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+void remove(const Comparable &x, BinaryNode * &t) {
+    if (t == nullptr) { return; } // 元素不存在
+    if (x < t->element) { remove(x, t->left);
+    } else if (x > t->element) { remove(x, t->right);
+    } else if (t->left != nullptr && t->right != nullptr) {  /// 有两个子节点
+        BinaryNode *current = detachMin(t->right), *oldNode = t;
+        current->left = t->left; current->right = t->right;
+        t = current; delete oldNode;
+    } else { BinaryNode *oldNode = t; /// 有一个或没有子节点
+        t = (t->left != nullptr) ? t->left : t->right; delete oldNode; 
+    } balance(t);
+}
+BinaryNode *detachMin(BinaryNode *&t) {
+    BinaryNode * current = t;
+    if(t->left!=nullptr) current = detachMin(t->left);
+    else{ BinaryNode *oldNode = t; t = t->right; return oldNode;
+    } balance(t);
+    return current;
+}
+\end{lstlisting}
+
+此外，\texttt{BST.h}有其他增改。主要包括
+
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+void balance( BinaryNode * & t );
+int height( BinaryNode *t ) const;
+int max( int lhs, int rhs ) const;
+void rotateWithLeftChild( BinaryNode * & k2 );
+void rotateWithRightChild( BinaryNode * & k1 );
+void doubleWithLeftChild( BinaryNode * & k3 );
+void doubleWithRightChild( BinaryNode * & k1 );
+\end{lstlisting}
+来使得删除节点后能按 AVL 树的方式保持平衡。
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
