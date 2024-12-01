@@ -1,0 +1,525 @@
+\documentclass[UTF8]{ctexart}
+\usepackage{geometry, CJKutf8}
+\geometry{margin=1.5cm, vmargin={0pt,1cm}}
+\setlength{\topmargin}{-1cm}
+\setlength{\paperheight}{29.7cm}
+\setlength{\textheight}{25.3cm}
+
+% useful packages.
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumerate}
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage{fancyhdr}
+\usepackage{layout}
+\usepackage{listings}
+\usepackage{float, caption}
+\usepackage{tabularx}
+\usepackage{booktabs} 
+\usepackage{threeparttable}
+\usepackage[dvipsnames]{xcolor}
+\lstset{
+    basicstyle=\ttfamily, basewidth=0.5em
+}
+
+% some common command
+\newcommand{\dif}{\mathrm{d}}
+\newcommand{\avg}[1]{\left\langle #1 \right\rangle}
+\newcommand{\difFrac}[2]{\frac{\dif #1}{\dif #2}}
+\newcommand{\pdfFrac}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\OFL}{\mathrm{OFL}}
+\newcommand{\UFL}{\mathrm{UFL}}
+\newcommand{\fl}{\mathrm{fl}}
+\newcommand{\op}{\odot}
+\newcommand{\Eabs}{E_{\mathrm{abs}}}
+\newcommand{\Erel}{E_{\mathrm{rel}}}
+
+\begin{document}
+
+\pagestyle{fancy}
+\fancyhead{}
+\lhead{Maplefatih, 3220103624}
+\chead{数据结构与算法第七次作业}
+\rhead{Nov.27th, 2024}
+
+\section{堆排序的设计}
+\subsection{整体设计思路}
+堆排序（Heap Sort）是一种基于比较的排序算法，利用堆这一数据结构进行排序。堆是一种完全二叉树，可以通过数组来高效地实现。在堆排序中，通常使用大根堆（最大堆）。基本思路为：
+
+\begin{itemize}
+    \item 将待排序的数组构建成一个大根堆（每个父节点的值大于或等于其子节点的值）。
+    \item 交换堆顶元素（最大值）与堆的最后一个元素，然后将堆的大小减一，重新调整结构使之保持为大根堆。重复上述操作，知道堆的大小为1。
+\end{itemize}
+
+堆排序的时间复杂度为$O(n \log n)$，空间复杂度为$O(1)$。
+
+\subsection{补充函数 \texttt{PercDown} 的功能及其实现细节}
+在排序中，为让序列保持大根堆的结构，我们采取下沉操作。具体来说，通过 \texttt{PercDown} 函数完成。\texttt{PercDown} 函数的功能是将堆中某个节点的值“下沉”，使得以该节点为根的子树仍然是一个堆。具体步骤如下：
+
+\begin{itemize}
+    \item 将当前节点的值暂存到一个变量 \texttt{tmp} 中。
+    \item 计算该节点的左孩子的位置 \texttt{child = 2*i + 1}，然后比较左右孩子的值，选择较大的一个。
+    \item 如果 \texttt{tmp} 小于较大的孩子的值，则将当前节点与较大的孩子交换，继续递归调整。
+    \item 如果 \texttt{tmp} 不小于较大的孩子的值，则说明堆的性质已经恢复，可以停止调整。
+\end{itemize}
+
+下面是 \texttt{PercDown} 函数的实现：
+
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+template <typename Comparable>
+void PercDown(std::vector<Comparable> &V, int i, int n) {
+    Comparable tmp = V[i];
+    int child = 2*i + 1;  // 左孩子的位置
+    while (child < n) {
+        // 判断右孩子是否存在且是否大于左孩子
+        if (child != n - 1 && V[child] < V[child + 1]) ++child;  // 选择较大的孩子
+        // 如果当前节点的值小于较大的孩子，则交换
+        if (tmp < V[child]) V[i] = V[child];
+        else break;  // 当前节点已经满足堆的性质，停止调整
+        // 继续下沉到子节点
+        i = child;
+        child = 2 * i + 1;
+    }
+    V[i] = tmp;  // 将暂存的值放回到正确的位置
+}
+\end{lstlisting}
+
+\subsection{主体函数 \texttt{HeapSort} 的功能及其实现细节}
+\texttt{HeapSort} 函数是堆排序的主体函数。它的功能是首先构建一个大根堆，然后逐步将堆顶元素（最大值）与当前堆的最后一个元素交换，减少堆的大小，每一步交换都对根节点进行\texttt{PercDown}，以保持堆的结构。该过程一直持续到堆的大小为1，此时排序完成。
+
+具体步骤如下：
+
+\begin{itemize}
+    \item 通过 \texttt{PercDown} 函数对数组进行调整，建立初始的大根堆。我们从最后一个非叶子节点开始（即 \texttt{len / 2 - 1}），逆序遍历所有的非叶节点，每一个节点上执行 \texttt{PercDown} 操作。
+    \item 循环执行以下操作，直到堆中只剩一个元素：将堆顶元素与当前堆的最后一个元素交换，然后堆的大小减1（不将最后一个元素纳入堆的调整中），对根节点进行\texttt{PercDown}，使以原大小减1的数组仍然为大根堆。
+\end{itemize}
+
+\texttt{HeapSort} 函数的实现代码如下：
+
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+template <typename Comparable>
+void HeapSort(std::vector<Comparable> &V) {
+    int len = V.size();
+    // 构建初始的大根堆
+    for (int j = len / 2 - 1; j >= 0; --j) PercDown(V, j, len);
+    // 交换堆顶元素和最后一个元素，调整堆
+    for (int j = len - 1; j > 0; --j) {
+        std::swap(V[0], V[j]);  // 交换堆顶与当前堆的最后一个元素
+        PercDown(V, 0, j);  // 对新的堆顶执行PercDown操作
+    }
+}
+\end{lstlisting}
+
+
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+
+\end{lstlisting}
+
+\section{测试程序的设计}
+
+\subsection{总体测试流程}
+为了评估堆排序算法的性能，我设计了一个完整的测试流程。具体步骤如下：
+
+\begin{itemize}
+    \item \textbf{生成测试序列}：通过不同的生成函数生成四种不同类型的测试序列。
+    \item \textbf{调用堆排序}：对每种测试序列，分别使用自定义的堆排序算法和标准库的堆排序算法进行排序。
+    \item \textbf{记录排序时间}：对于每种序列，记录两种排序算法的运行时间。
+    \item \textbf{验证排序结果}：通过 \texttt{check} 函数验证排序结果是否正确。
+    \item \textbf{比较结果}：比较自定义堆排序算法与标准库堆排序算法在同一序列上的性能差异。
+\end{itemize}
+
+在每次测试中，我们分别计算并输出以下内容：
+\begin{itemize}
+    \item 排序算法的执行时间。
+    \item 排序结果的正确性（通过 \texttt{check} 函数判断）。
+    \item 自定义堆排序与标准库堆排序的性能差异。
+\end{itemize}
+
+\subsection{check 函数的设计思路}
+\texttt{check} 函数用于验证排序后的数组是否满足升序排列的要求。其设计思路如下：
+
+\begin{itemize}
+    \item 遍历数组中的每一对相邻元素，检查前一个元素是否小于等于后一个元素。
+    \item 如果发现任意一对元素不符合升序排列（即前一个元素大于后一个元素），则返回 \texttt{false}，表示排序结果错误。
+    \item 如果遍历结束，未发现不满足升序排列的元素，返回 \texttt{true}，表示排序结果正确。
+\end{itemize}
+
+具体实现如下：
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+bool check(std::vector<int> &V){
+    int prev=0;
+    for(unsigned int i=1;i<V.size();++i){
+        if(V[i] < V[prev]) return false;
+        prev=i;
+    }
+    return true;
+}
+\end{lstlisting}
+
+\subsection{四种序列的生成函数的设计思路}
+为了测试堆排序在不同类型数据上的表现，我们设计了四种序列生成函数，分别是：
+
+
+\subsubsection{\textbf{随机序列（Random Sequence）}}
+
+生成一个长度为 \texttt{length} 的整数序列，序列中的每个元素是从一个指定的范围内均匀分布生成的随机数。该序列用于测试堆排序在随机数据上的表现。
+
+设计思路：
+\begin{itemize}
+    \item 使用 C++ 标准库中的 \texttt{random\_device} 和 \texttt{mt19937} 随机数生成器。
+    \item 使用 \texttt{uniform\_int\_distribution} 来确保生成的整数在指定的范围内均匀分布。
+\end{itemize}
+
+实现代码：
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+std::vector<int> generateRandomSequence(int length, int min, int max) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(min, max);
+    std::vector<int> sequence(length);
+    for (int i = 0; i < length; ++i) {
+        sequence[i] = dis(gen);
+    }
+    return sequence;
+}
+\end{lstlisting}
+
+\subsubsection{\textbf{递增序列（Ordered Sequence）}}
+生成一个长度为 \texttt{length} 的递增序列，元素从 \texttt{min} 开始，每个元素的增量是一个常数（\texttt{ratio}）。该序列用于测试堆排序在已经有序数据上的表现。
+
+设计思路：
+\begin{itemize}
+    \item 从 \texttt{min} 开始，递增生成每个元素，增量为 \texttt{ratio}。
+\end{itemize}
+
+实现代码：
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+std::vector<int> generateOrderedSequence(int length, int min, int ratio) {
+    std::vector<int> sequence(length);
+    for (int i = 0; i < length; ++i) {
+        sequence[i] = min + i * ratio;
+    }
+    return sequence;
+}
+\end{lstlisting}
+
+\subsubsection{\textbf{递减序列（Reverse Sequence）}}
+生成一个长度为 \texttt{length} 的递减序列，元素从 \texttt{min} 开始，递增生成元素，但是在生成时按逆序存储。该序列用于测试堆排序在逆序数据上的表现。
+
+设计思路：
+\begin{itemize}
+    \item 从 \texttt{min} 开始，递增生成每个元素，增量为 \texttt{ratio}，但反向存储。
+\end{itemize}
+
+实现代码：
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+std::vector<int> generateReverseSequence(int length, int min, int ratio) {
+    std::vector<int> sequence(length);
+    for (int i = 0; i < length; ++i) {
+        sequence[length - 1 - i] = min + i * ratio;
+    }
+    return sequence;
+}
+\end{lstlisting}
+
+\subsubsection{\textbf{重复序列（Repetitive Sequence）}}
+生成一个长度为 \texttt{length} 的序列，元素是从 \texttt{min} 到 \texttt{max/10} 的重复随机数。该序列用于测试堆排序在有大量重复元素的情况下的表现。
+
+设计思路：
+\begin{itemize}
+    \item 生成一个随机数序列，限制最大值为 \texttt{len / 10}，从而增加重复元素的数量。
+\end{itemize}
+
+实现代码：
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+std::vector<int> generateRepetitiveSequence(int length, int min, int max) {
+    return generateRandomSequence(length, min, max / 10);  // 使用随机生成函数，限制最大值
+}
+\end{lstlisting}
+
+
+\subsection{test 函数的设计思路}
+\texttt{test} 函数是整个测试的核心。其设计思路如下：
+
+\begin{itemize}
+    \item 函数使用一个 \texttt{map} 来存储不同类型的测试序列及其名称。对于每个序列类型，调用相应的生成函数生成一个测试序列。
+    \item 对每种生成的序列，分别使用自定义堆排序和标准库堆排序进行排序。
+    \item 使用 \texttt{check} 函数验证排序结果是否正确。
+    \item 计算并输出每个排序算法的执行时间，同时比较两者之间的性能差异。
+\end{itemize}
+
+具体实现如下：
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+void test() {
+    std::chrono::duration<double> duration, delta;
+    std::map<std::string, std::vector<int>> Ses = {
+        {"Random Sequence", generateRandomSequence(len, 1, len * 10)},
+        {"Ordered Sequence", generateOrderedSequence(len, 1, 2)},
+        {"Reverse Sequence", generateReverseSequence(len, 1, 2)},
+        {"Repetitive Sequence", generateRepetitiveSequence(len, 1, len / 10)}
+    };
+
+    for (auto& it : Ses) {
+        std::vector<int> it2 = it.second;
+        std::cout << "Sorting " << it.first << ", time cost: ";
+        auto start = std::chrono::high_resolution_clock::now();
+        HeapSort<int>(it.second);
+        auto end = std::chrono::high_resolution_clock::now();
+        duration = end - start;
+        std::cout << "mine = " << duration.count() << "(" << check(it.second) << ")";
+        
+        start = std::chrono::high_resolution_clock::now();
+        std::make_heap(it2.begin(), it2.end());
+        std::sort_heap(it2.begin(), it2.end());
+        end = std::chrono::high_resolution_clock::now();
+        delta = duration - (end - start);
+        duration = end - start;
+        std::cout << ", std = " << duration.count() << "(" << check(it2) << ")" << ", delta = " << delta.count() << std::endl;
+    }
+}
+\end{lstlisting}
+\section{测试结果}
+\subsection{正确性检验}
+利用\texttt{check}函数进行判断，得到结果：
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+mine = 0.0396209(1), std = 0.0340826(1), delta = 0.00553825
+mine = 0.0874061(1), std = 0.0789765(1), delta = 0.00842957
+mine = 0.096988(1), std = 0.082103(1), delta = 0.0148849
+mine = 0.0438592(1), std = 0.0416189(1), delta = 0.00224038
+\end{lstlisting}
+可知我们排序算法是正确的。
+
+\subsection{效率对比}
+开启O2优化，每一种序列测试100次，并求取平均值，得到测试结果如下表所示。
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{c|c|c|c}
+\hline
+    \pmb{Type of Sequence} & \pmb{my heapsort time} & \pmb{std::sort\_heap time} & \pmb{Mine$-$STL}\\
+\hline
+    Random Sequence & 0.0858163 & 0.0841812 & 0.00163504  \\
+    Ordered Sequence & 0.0376392 & 0.0349534 & 0.00268578\\
+    Reverse Sequence & 0.0416679 & 0.0407138 & 0.000954031 \\
+    Repetitive Sequence & 0.104456 & 0.10354 & 0.000916121 \\
+\hline
+\end{tabular}
+    \caption{不同序列下两种排序所需时间对比}
+    \label{tab: 不同序列下两种排序所需时间对比}
+\end{table}
+
+总体来说，我们的堆排序算法和系统的差异不大。在特殊的序列上，如有序序列，标准库的排序会做得更好。
+\section{原因分析}
+\subsection{时间复杂度分析}
+\texttt{HeapSort}函数分为两部分：\textbf{构建堆}和\textbf{排序}。我们分别分析它们的时间复杂度。
+
+\subsubsection*{第一部分：构建堆}
+\begin{verbatim}
+for (int j = len / 2 - 1; j >= 0; --j) {
+    PercDown(V, j, len);
+}
+\end{verbatim}
+
+1. \textbf{循环范围}：
+$j$ 从 $\left\lfloor \frac{\text{len}}{2} \right\rfloor - 1$ 到 $0$，循环运行次数为 \( O(n) \)（即非叶子节点的数量）。
+
+2. \textbf{每次调用 \texttt{PercDown} 的复杂度}： $O(h_i)$，其中 \( h_i \) 表示当前节点到堆底的高度，堆的最大高度为 \( O(\log n) \)。
+
+3. \textbf{总时间复杂度}：
+构建堆需要对所有非叶子节点调用 \texttt{PercDown}，其代价为：
+\[
+T = \sum_{i=1}^{\left\lfloor \frac{n}{2} \right\rfloor} O(h_i),
+\]
+其中 \( h_i \) 随着节点的深度逐渐减小，因此总复杂度为：$O(n)$.
+
+\subsubsection*{第二部分：排序}
+\begin{verbatim}
+for (int j = len - 1; j > 0; --j) {
+    std::swap(V[0], V[j]);
+    PercDown(V, 0, j);
+}
+\end{verbatim}
+
+1. \textbf{循环范围}
+$j$ 从 $n- 1$ 到 $0$，循环运行次数为 \( O(n) \)。
+
+2. \textbf{每次操作的代价}：
+\begin{itemize}
+    \item \textbf{交换操作}：\( O(1) \)
+    \item \textbf{\texttt{PercDown} 调整堆}：堆的大小逐渐缩小，从 \( n \) 开始到 \( 1 \) 结束，但每次调整的代价为 \( O(\log j) \)，其中 \( j \) 是当前堆的大小。
+\end{itemize}
+
+3. \textbf{总时间复杂度}：
+外部循环运行 \( n-1 \) 次，每次调整代价逐渐减少：
+\[
+T = \sum_{j=1}^{n-1} O(\log j)
+\]
+这是一个渐近等价于 \( O(n \log n) \) 的求和，因为对数增长是主要开销。
+
+\subsection*{总时间复杂度}
+堆排序的整体时间复杂度为：
+\[
+O(n) + O(n \log n) = O(n \log n)
+\]
+
+\subsection{算法效率比较}
+两者的算法差异较小。
+
+根据对c++标准库函数的分析，可以发现其对于heap的处理会有更多的封装。在一些边界问题上，会更加细致处理偶数节点和特殊子节点情况等情况，使得其运行速度快于我们的设计。例如，标准库的排序代码为
+
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+    while (__last - __first > 1) {
+    --__last;
+    std::__pop_heap(__first, __last, __last, __comp);
+}
+\end{lstlisting}
+
+会调用已经封装好的\texttt{\_\_pop\_heap}函数进行处理。其设计思路为
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+void __pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last,
+                _RandomAccessIterator __result, _Compare& __comp){
+    _ValueType __value = _GLIBCXX_MOVE(*__result); // 保存最后一个元素
+    *__result = _GLIBCXX_MOVE(*__first);          // 堆顶元素放到末尾
+    std::__adjust_heap(__first, _DistanceType(0), _DistanceType(__last - __first),
+                       _GLIBCXX_MOVE(__value), __comp); // 调整堆
+}
+\end{lstlisting}
+
+这里和我们的想法是基本一致的。它的\texttt{\_\_adjust\_heap}实现为
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+void __adjust_heap(_RandomAccessIterator __first, _Distance __holeIndex,
+    _Distance __len, _Tp __value, _Compare __comp) {
+    const _Distance __topIndex = __holeIndex;
+    _Distance __secondChild = __holeIndex;
+    while (__secondChild < (__len - 1) / 2) {
+    __secondChild = 2 * (__secondChild + 1);
+    if (__comp(__first + __secondChild, __first + (__secondChild - 1)))
+    __secondChild--;
+    *(__first + __holeIndex) = _GLIBCXX_MOVE(*(__first + __secondChild));
+    __holeIndex = __secondChild;
+    }
+    if ((__len & 1) == 0 && __secondChild == (__len - 2) / 2) {
+    __secondChild = 2 * (__secondChild + 1);
+    *(__first + __holeIndex) = _GLIBCXX_MOVE(*(__first + (__secondChild - 1)));
+    __holeIndex = __secondChild - 1;
+    }
+    std::__push_heap(__first, __holeIndex, __topIndex, _GLIBCXX_MOVE(__value), __comp);
+}
+\end{lstlisting}
+
+它能够适用于更多的情形。主要流程仍然是，从堆顶（\texttt{\_\_holeIndex}）向下调整堆，通过选择较大（或较小）子节点完成调整。使用 \texttt{\_\_value} 暂存节点值，避免频繁的直接交换操作。支持用户定义的比较器\texttt{\_\_comp}，能够灵活构造最大堆或最小堆。
+
+综上所示，标准库的堆排序的实现和我们的实现基本一致，两者差异较小。
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
