@@ -1,0 +1,675 @@
+\documentclass[UTF8]{ctexart}
+\usepackage{geometry, CJKutf8}
+\geometry{margin=1.5cm, vmargin={0pt,1cm}}
+\setlength{\topmargin}{-1cm}
+\setlength{\paperheight}{29.7cm}
+\setlength{\textheight}{25.3cm}
+
+% useful packages.
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumerate}
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage{fancyhdr}
+\usepackage{layout}
+\usepackage{listings}
+\usepackage{float, caption}
+\usepackage[dvipsnames]{xcolor}
+\lstset{
+    basicstyle=\ttfamily, basewidth=0.5em
+}
+
+% some common command
+\newcommand{\dif}{\mathrm{d}}
+\newcommand{\avg}[1]{\left\langle #1 \right\rangle}
+\newcommand{\difFrac}[2]{\frac{\dif #1}{\dif #2}}
+\newcommand{\pdfFrac}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\OFL}{\mathrm{OFL}}
+\newcommand{\UFL}{\mathrm{UFL}}
+\newcommand{\fl}{\mathrm{fl}}
+\newcommand{\op}{\odot}
+\newcommand{\Eabs}{E_{\mathrm{abs}}}
+\newcommand{\Erel}{E_{\mathrm{rel}}}
+
+\begin{document}
+
+\pagestyle{fancy}
+\fancyhead{}
+\lhead{Maplefatih, 3220103624}
+\chead{数据结构与算法项目作业}
+\rhead{Nov.7th, 2024}
+\section{项目概述}
+
+本项目旨在设计并实现一个四则运算计算器，支持加法 (+)、减法 (-)、乘法 (*)、除法 (/) 以及括号 () 运算。计算器需要能处理合法的中缀表达式，并能够识别和报告非法输入。程序采用 C++ 标准库中的容器与算法进行实现。
+
+\textbf{本程序能够实现的功能}:
+\begin{itemize}
+    \item 解析并计算四则运算表达式。
+    \item 支持输入有空格。
+    \item 支持对负号跟随数字的情况（表示负数）进行解析。
+    \item 处理有限位小数及科学计数法表达式。
+\end{itemize}
+
+\textbf{本程序不能允许的非法输入}:
+\begin{itemize}
+    \item 括号不匹配。
+    \item 连续运算符。
+    \item 除数为0。
+\end{itemize}
+
+\textbf{关于负数}:
+\begin{itemize}
+    \item 负号和数字之间能够有空格。如\texttt{1-- 1}是允许的。
+    \item 不能够实现连续负号再加负数，如\texttt{1---1}是不被允许的。
+\end{itemize}
+
+\textbf{关于科学计数法}:
+\begin{itemize}
+    \item 能够支持\texttt{E}或者\texttt{e}作为科学计数法的标志。
+    \item 科学计数法要求\texttt{E}或者\texttt{e}前后包含合法的数字。如\texttt{1e3}是允许的，\texttt{1E -1.2}，\texttt{2.3 e1.2}，\texttt{1e*1.2}是不被允许的。
+    \item 指数项必须是整数。如\texttt{2.3e1.2}是不被允许的。
+\end{itemize}
+
+
+\section{运算器部分的设计思路}
+
+\subsection{输入与输出}
+
+输入：中缀表达式字符串。
+
+输出：若输入表达式合法，输出计算结果；若输入非法，输出\texttt{ILLEGAL}。
+
+\subsection{处理流程}
+
+程序的主要任务是对输入的中缀表达式进行合理有效地拆解，分成操作数和操作符，然后转化为后缀表达式进行计算。具体流程如下：
+
+\begin{enumerate}
+    \item \textbf{输入解析（\texttt{partitionString}）:} 将输入字符串拆分成一个个符号（操作数和操作符），并存储在一个中缀表达式列表中。在此过程中，程序会检查操作符是否合理，数字格式是否正确（支持负数、浮点数和科学计数法）等异常。
+    
+    \item \textbf{中缀转后缀（\texttt{infixToPostfix}）:} 利用栈将中缀表达式转换为后缀表达式（逆波兰表示法），在此过程中遵循操作符优先级和括号匹配规则。左括号 \texttt{(} 入栈，右括号 \texttt{)} 弹栈直到遇到左括号，操作符按照优先级进行栈内排序。会检查括号不匹配这一异常情况。
+    
+    \item \textbf{计算（\texttt{calculate}）:} 通过栈计算后缀表达式的值，运算过程中按操作符顺序执行加减乘除运算。对一般操作，检查操作数是否个数正确，最后运算结果是否仅为一个数等异常情况。对除法操作，检查除数是否为零这一异常情况。
+    
+    \item \textbf{非法输入处理:} 以上三步都有非法的检查，确保运算结果的正确性。如果发现非法情况（如除数为零、括号不匹配、连续运算符等），立即返回\texttt{false}并输出\texttt{IILEGAL}。
+\end{enumerate}
+
+\subsection{类及其功能设计}
+
+\subsubsection{Layer 类}
+
+\texttt{Layer} 类用于表示后缀表达式中的每个元素，可以是\textbf{操作数}（数字）也可以是\textbf{操作符}。具体包含：
+\begin{itemize}
+    \item \texttt{std::string operand}: 字符串表示的操作数或操作符。
+    \item \texttt{int isOperator}: 指示该层是否为操作符，\texttt{-1} 表示数字，\texttt{0} 表示操作符。同样都是操作符，还用数字\texttt{2}和\texttt{1}区分高和低优先级。
+    \item \texttt{double number}: 如果该层为数字，则该字段存储数字值。使用\texttt{std::stod()}函数将数字字符串转化为数字。
+\end{itemize}
+
+\subsubsection{Calculator 类}
+
+\texttt{Calculator} 类负责整体的计算任务，包括解析输入字符串、生成后缀表达式和执行计算流程。
+
+\begin{itemize}
+    \item \textbf{构造函数}: 接受一个输入字符串并初始化计算器，自动调用\texttt{partitionString()}和\texttt{infixToPostfix()}进行输入的解析和转换。
+    \item \textbf{\texttt{bool partitionString()}}: 将输入的中缀表达式字符串拆解成有效的符号。
+    \item \textbf{\texttt{bool infixToPostfix()}}: 将中缀表达式转换为后缀表达式。
+    \item \textbf{\texttt{bool calculate()}}: 根据后缀表达式计算结果。
+\end{itemize}
+
+\subsection{Calculator 中重要函数的实现}
+
+本节将重点解释程序中的三个核心函数：\texttt{partitionString()}、\texttt{infixToPostfix()} 和 \texttt{calculate()}。这三个函数分别负责输入解析、表达式转换和计算执行，是程序功能实现的核心部分。
+
+\subsubsection{partitionString() 函数}
+
+\texttt{partitionString()} 函数的目的是对输入字符串进行解析，将数字、操作符以及科学计数法中的符号正确拆解并存入中缀表达式（\texttt{infix}）容器。若输入中包含不合法的字符或格式，程序将返回 \texttt{false}。
+
+\textbf{工作流程：}
+\begin{enumerate}
+    \item 初始化阶段：
+    \begin{itemize}
+        \item 创建空字符串 \texttt{number} 用于存储当前解析的数字。
+        \item 使用布尔变量 \texttt{hasminus} 来标识当前数字是否已经包含负号。
+        \item 使用布尔变量 \texttt{hasE} 来标识当前数字是否已包含科学计数法中的 "e" 或 "E"。
+    \end{itemize}
+
+    \item 遍历输入的字符串\texttt{input}：
+    \begin{itemize}
+        \item 对每个字符 \texttt{ch}，如果是空格，则跳过该字符。(忽略空格，解析有效字符)
+        \item 如果是数字或小数点，则将其添加到 \texttt{number} 字符串中。
+        \item 如果遇到 "e" 或 "E"（科学计数法中的标志符），需要检查是否已经存在另一个 "e"。如果不合法，返回 \texttt{false}。
+        \item 如果遇到合法运算符（包括 +、-、*、/、(、)），程序会根据当前数字的状态决定如何处理：
+        \begin{itemize}
+            \item 如果 \texttt{number} 为空且遇到负号，则处理为负号的转化（将 "-" 作为 "(-1)*" 处理）。
+            \item 如果 \texttt{number} 非空，先将其推入中缀表达式 \texttt{infix}，然后将操作符加入中缀表达式。
+        \end{itemize}
+        \item 如果遇到非法字符，则返回 \texttt{false}。
+    \end{itemize}
+
+    \item 处理结束：
+    \begin{itemize}
+        \item 如果 \texttt{number} 非空，说明最后一个数字没有被加入中缀表达式，需要将其推入。
+    \end{itemize}
+
+\end{enumerate}
+
+\textbf{特殊情况处理}
+\begin{itemize}
+    \item 程序特别处理了负号，在合适的情况下将负号转化为 "-1*"，若负号前面为除号，则需转化为 "-1/"以确保负号的运算符优先级正确。
+    \item 对科学计数法（如 "1.23e-4"）进行严格检查，确保 "e" 后的数字和符号合法。
+\end{itemize}
+
+\textbf{异常处理}
+\begin{itemize}
+    \item 如果遇到不合法字符或不合规的科学计数法表达格式，返回 \texttt{false}。
+\end{itemize}
+
+\textbf{设计代码如下：}
+
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+bool partitionString() {
+    std::string number;
+    bool hasminus = false; // 标识当前number中是否已经包含e或E
+    bool hasE = false; // 标识当前number中是否已经包含-号
+
+    char ch = input[0];
+    for (size_t i = 0; i < input.size(); ++i) {
+        ch = input[i];
+        if (std::isspace(ch)) {
+            continue; // 跳过空格
+        }
+        if (std::isdigit(ch) || ch == '.') { // 数字或小数点直接加入number字符串
+            number += ch;
+        } else if (ch == 'e' || ch == 'E') { // 科学计数法中的 e 或 E 前后必须跟合法数字，且不能重用e
+            if (hasE || !isvalidE(i))return false;
+            hasE = true;
+            number += 'e'; // 加入 e 或 E 及其之后合法元素
+            ++i;
+            do{
+                number += input[i++];
+            }
+            while(std::isdigit(input[i]));
+            if(input[i] == '.' || isoperatorinE(number.back()))return false; // e后出现小数点 '.' 或者 单个 '+' '-'
+            i -= 1;
+        } else if (isoperator(ch)) { // 合法运算符
+            if(!hasminus && ch == '-' && number.empty() && (isvalidminus())) { // "-" 作为负号的转化
+                std::string mark="";
+                if(!infix.empty()) mark= infix.back();
+                infix.push_back("-1");
+                if(mark=="/")infix.push_back("/");
+                else infix.push_back("*");
+                hasminus=true;
+                // number+=ch;
+            } else {
+                if(!number.empty()){
+                    infix.push_back(number);
+                    hasE = false;
+                    number.clear();
+                }
+                hasminus = false;
+                infix.push_back(std::string(1, ch)); // 操作符加入中缀表达式
+                } 
+        } else {
+            return false; // 其他非法字符
+        }
+    }
+
+    if (!number.empty()) infix.push_back(number);
+    return true;
+}
+\end{lstlisting}
+
+\subsubsection{infixToPostfix() 函数}
+
+\texttt{infixToPostfix()} 函数的主要任务是将拆解后的中缀表达式转换为后缀表达式（即逆波兰表示法）。在中缀表达式中，操作符的位置依赖于括号和优先级，而在后缀表达式中，操作符位置则依赖于操作数顺序，且不需要括号来明确运算优先级。
+
+\textbf{工作流程：}
+\begin{itemize}
+    \item 使用栈来暂存操作符和括号，操作数直接添加到后缀表达式中。
+    \item 遇到左括号 \texttt{(} 时，直接入栈，表示当前运算的开始。
+    \item 遇到右括号 \texttt{)} 时，弹出栈顶操作符直到遇到左括号，并将弹出的操作符加入后缀表达式。
+    \item 对于其他操作符，检查栈顶的操作符是否具有更高的优先级，如果有，则弹出栈中的操作符到后缀表达式中，直到栈顶操作符优先级较低或栈为空。
+    \item 最后，栈中剩余的所有操作符按顺序加入到后缀表达式中。
+\end{itemize}
+
+\textbf{异常处理：}
+\begin{itemize}
+    \item 在遍历中，若发现括号不匹配，函数会返回 \texttt{false}。
+\end{itemize}
+
+\textbf{代码设计如下：}
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+bool infixToPostfix() {
+    std::stack<Layer> operators;
+
+    for (const auto& token : infix) {
+        if (std::isdigit(token[0]) || (token.size() > 1 && token[0]=='-')) {
+            postfix.push_back(Layer(token, -1));  // 操作数直接加入后缀表达式
+        } else if (token == "(") {
+            operators.push(Layer(token, 0));     // 左括号压栈
+        } else if (token == ")") {
+            // 遇到右括号，弹出直到左括号
+            while (!operators.empty() && operators.top().getoperand() != "(") {
+                postfix.push_back(operators.top());
+                operators.pop();
+            }
+            if (operators.empty()) return false;  // 括号不匹配
+            operators.pop();  // 弹出左括号
+        } else {
+            // 遇到运算符
+            Layer temp = Layer(token, 0);
+            while (!operators.empty() && operators.top().getisOperator() >= temp.getisOperator()) {
+                postfix.push_back(operators.top());
+                operators.pop();
+            }
+            operators.push(temp);
+        }
+    }
+
+    // 将剩余运算符压入后缀表达式
+    while (!operators.empty()) {
+        if (operators.top().getoperand() == "(") return false;  // 括号不匹配
+        postfix.push_back(operators.top());
+        operators.pop();
+    }
+
+    return true;
+}
+\end{lstlisting}
+
+\subsubsection{calculate() 函数}
+
+\texttt{calculate()} 函数的功能是根据转换后的后缀表达式，利用堆栈结构进行运算，计算成功返回\texttt{true}，将计算结果存入变量\texttt{out}中。
+
+\textbf{工作流程：}
+\begin{itemize}
+    \item 遍历后缀表达式，对于每个元素：
+    \begin{itemize}
+        \item 如果是操作数（数字），将其压入栈中。
+        \item 如果是操作符，从栈中弹出两个操作数，进行相应的运算，结果再压回栈中。
+    \end{itemize}
+    \item 在所有操作符都被处理完后，栈中会剩下一个元素，它就是计算结果。
+    
+\end{itemize}
+
+\textbf{异常处理：}
+\begin{itemize}
+    \item 在进行除法运算时，需要检查除数是否为零，如果是零，函数会返回 \texttt{false}。
+    \item 遇到操作数个数不正确等情况，函数会返回 \texttt{false}。
+\end{itemize}
+
+\textbf{代码设计如下：}
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+bool calculate() {
+    for (const auto& token : postfix) {
+        if (token.getisOperator()==-1) {
+            // 将操作数压入stack
+            stack.push(token);
+        } else {
+            // 从stack中弹出两个操作数
+            if(stack.size()<2) return false;
+            Layer right = stack.top(); stack.pop();
+            Layer left = stack.top(); stack.pop();
+
+            if(right.getisOperator()!=-1 || left.getisOperator()!=-1)return false;
+
+            double result = 0.0;
+            if (token.getoperand() == "+") result = left.getnumber() + right.getnumber();
+            else if (token.getoperand() == "-") result = left.getnumber() - right.getnumber();
+            else if (token.getoperand() == "*") result = left.getnumber() * right.getnumber();
+            else {
+                if (right.getnumber() == 0) return false;  // 检查除数是否为0
+                result = left.getnumber() / right.getnumber();
+            }
+            // 将结果作为新的操作数压回栈
+            stack.push(Layer(std::to_string(result), -1));
+        }
+    }
+    if (stack.size() != 1 || stack.top().getisOperator()!=-1) return false;
+    out = stack.top().getnumber();
+    return true;
+}
+\end{lstlisting}
+
+\section{测试程序的设计}
+\subsection{设计原则}
+测试的设计基于以下几个原则和思路：
+
+\begin{itemize}
+    \item \textbf{全面性}：测试用例应涵盖各种可能的数学表达式，包括简单的运算、括号运算、负号运算、除零情况、科学计数法等。通过覆盖常见场景，确保计算器在大多数情况下都能正确计算。
+    \item \textbf{错误处理}：计算器应能够识别并妥善处理非法的表达式，比如括号不匹配、运算符使用错误、除数为零等常见错误。测试中应包括这些错误类型，以验证程序的鲁棒性。
+    \item \textbf{边界测试}：通过设计一些极限情况和特殊场景（如极小值、极大值、复杂的嵌套括号等），检查程序在这些情况下是否能正确计算并避免出现溢出或精度问题。
+\end{itemize}
+
+\subsection{测试内容}
+
+测试内容分为以下几个类别：
+
+\begin{itemize}
+    \item \textbf{括号和运算符的正确性}：测试括号匹配和运算符使用的合法性，确保表达式的结构合法且符合数学规则。
+    \item \textbf{除法和零的处理}：测试除数为零的情况，确保程序能够正确地捕捉并处理除以零的错误。
+    \item \textbf{负号运算符的识别}：验证负号的使用是否符合规则，确保程序能够正确识别负数和负号运算。
+    \item \textbf{科学计数法的解析}：验证程序对科学计数法的支持，包括正确解析正负指数以及避免误用。
+    \item \textbf{连续运算符和运算顺序}：测试运算符是否能够按照正确的优先级和顺序进行运算，且不出现不合法的连续运算符。
+    \item \textbf{边界情况}：包括处理非常大或非常小的数字、复杂嵌套的括号、极端运算等。
+\end{itemize}
+
+
+\textbf{代码设计如下：}
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+void testCal(std::vector<std::string> &expressions){
+    for (const auto& expr : expressions) {
+        std::cout << expr << ": "<<std::endl;
+        Calculator cal(expr);
+        if(!cal.getisValid() || !cal.calculate()){
+            std::cout<<"ILLIGAL"<<std::endl;
+        }else {
+            std::cout<< std::setprecision(8) <<cal.getresult()<<std::endl;
+        }
+    }
+}
+
+int main() {
+    
+    std::vector<std::string> exp[10];
+    int end = -1;
+
+    // 括号不匹配
+    std::cout<<"----------------------------------------"<<std::endl;
+    std::cout<<"括号不匹配"<<std::endl;
+    exp[++end] = {  
+        "(3 + 2 * (4 - 1",          // 错误：括号不匹配
+        "((5 + 6) * 3) - 4)",      // 错误：括号不匹配
+        "3 + (4 - 2))",            // 错误：括号不匹配
+        "((2)+(2))+5+6*(2)+6)"     // 错误：括号不匹配
+    };
+    testCal(exp[end]);
+
+    // 运算符连续使用
+    std::cout<<"----------------------------------------"<<std::endl;
+    std::cout<<"运算符连续使用"<<std::endl;
+    exp[++end] = {  
+        "7 --- 2",                // 错误：连续运算符
+        "7 -- 2",                 // 正确: 7 - (-2) = 7 + 2 = 9
+        "4 ** 2",                 // 错误：非法运算符 **
+        "3 + * 2",                // 错误：运算符缺失数字
+        "10 / / 5",               // 错误：连续运算符
+        "(7 +-1)+- 2.5",          // 正确: (7 + (-1)) + (-2.5) = 6 - 2.5 = 3.5
+        "(7 -+1)-+ 2.5",          // 错误，-+1不合法
+        "(7 *-1)/- 2",            // 正确: (7 * -1) / (-2) = -7 / -2 = 3.5
+        "(7 -*1)/- 2",            // 错误：运算符使用错误
+    };
+    testCal(exp[end]);
+
+    // 以运算符开头或结尾
+    std::cout<<"----------------------------------------"<<std::endl;
+    std::cout<<"以运算符开头或结尾"<<std::endl;
+    exp[++end] = { 
+        "+ 5 * 3",                // 错误：以运算符开头
+        "5 * 3+",                 // 错误：以运算符结尾
+        "7 -",                    // 错误：以运算符结尾
+        "- 7",                    // 错误：以运算符开头
+        "* (4 + 5)",              // 错误：以运算符开头
+        "(4 + 5) *",              // 错误：以运算符结尾
+        "/ (3 + 2)",              // 错误：以运算符开头
+        "(3 + 2) /"               // 错误：以运算符结尾
+    };
+    testCal(exp[end]);
+
+    // 除数为 0
+    std::cout<<"----------------------------------------"<<std::endl;
+    std::cout<<"除数为零"<<std::endl;
+    exp[++end] = { 
+        "8 / 0",                  // 错误：除以零
+        "10 / (3 - 3)",           // 错误：除以零
+        "15 / (7 - (2 + 5))"      // 错误：除以零
+    };
+    testCal(exp[end]);
+
+    // 括号和负号运算符
+    std::cout<<"----------------------------------------"<<std::endl;
+    std::cout<<"括号和负号运算符"<<std::endl;
+    exp[++end] = {  
+        "12.3*(-1)/3",            // 正确: 12.3 * (-1) / 3 = -12.3 / 3 = -4.1
+        "(8.12 / -2) /1",         // 正确: 8.12 / (-2) / 1 = -4.06
+        "10.10 / (2 +- 3)",       // 正确: 10.10 / (2 + (-3)) = 10.10 / (-1) = -10.10
+        "-15 / (7 *-1/-(2 + 5))", // 正确: -15 / (7 * -1 / -(7)) = -15 / (7 * -1 / -7) = -15 / 1 = -15
+        "-(2)-(-3)",              // 正确: -2 - (-3) = -2 + 3 = 1
+        "2.3+4*((12)-(-2))",      // 正确: 2.3 + 4 * (12 + 2) = 2.3 + 56 = 58.3
+        "(-(-5.2))*(-4.2)+-3/6"  // 正确: -(-5.2) = 5.2; 5.2 * (-4.2) = -21.84; -3 / 6 = -0.5; -21.84 + (-0.5) = -22.34
+    };
+    testCal(exp[end]);
+
+    // 使用科学计数法
+    std::cout<<"----------------------------------------"<<std::endl;
+    std::cout<<"使用科学计数法"<<std::endl;
+    exp[++end] = { 
+        "8.12e3 / -2",            // 正确: 8.12e3 / -2 = 8120 / -2 = -4060
+        "10.10e1 / (2 +- 3)",     // 正确: 10.10e1 / (2 + (-3)) = 101 / (-1) = -101
+        "15e-1 / (7 *-1- (2 + 5))", // 正确: 15e-1 = 1.5; (7 * -1) - (2 + 5) = -7 - 7 = -14; 1.5 / -14 = -0.1071
+
+        "2e3e4",                 // 错误：重复的e
+        "e5 + 1",                // 错误：e不能单独出现
+        "1.2e + 3",              // 错误：缺少指数
+        "1 + -",                 // 错误：单独的负号
+        "1e",                    // 错误：不完整的科学计数法
+        "1.2e++3",               // 错误：连续符号
+        "(2e-) + 3"              // 错误：括号内不完整的科学计数法
+    };
+    testCal(exp[end]);
+
+    std::cout<<"----------------------------------------"<<std::endl;
+    std::cout << "测试负数、括号和科学计数法的表达式" << std::endl;
+
+    exp[++end] = {
+        "1.5e2 + -(3.1E-2)",      // 正确: 1.5e2 = 150, 3.1E-2 = 0.031; 150 + (-0.031) = 149.969
+        "-(2*-1.23e4) + -(5.67E+4)",    // 正确: -(2 * -1.23e4) = 24600; -(5.67e4) = -56700; 24600 + -56700 = -32100
+        "3 + -1/ -2.1e+3",           // 正确: -1 / -2.1e3 = 0.000476; 3 + 0.000476 = 3.000476
+        "-3.14e-2",              // 正确: -3.14e-2 = -0.0314
+        "2.5e2 *1/(-1/ -3.2e1)",      // 正确: 2.5e2 * 1 / (1 / 3.2e1) = 250 * 3.2e1 = 8000
+    };
+    testCal(exp[end]);
+
+    std::cout<<"----------------------------------------"<<std::endl;
+    std::cout << "复杂测试" << std::endl;
+    exp[++end] = {
+        "((1e3 - (2e2 + 1e1)) / (3e-2 * (4e3 + -5e2)))",       // 正确: 1e3 - 2e2 - 1e1 = 790; 3e-2 * 3500 = 105; 790 / 105 = 7.523809
+        "(((-5e2 + 6e3) * 3e1) / (2e4 - (3e-2 + -1e-1)))",      // 正确: (-5e2 + 6e3) = 5500; 5500 * 3e1 = 165000; 2e4 - 3e-2 + 1e-1 = 19999.97; 165000 / 19999.97 = 8.25
+        "(3e2 - (2e3 + (1e4 / (-5e1 - 2e2))))",                  // 正确: 300 - (2000 + (10000 / (-50 - 200))) = -1660
+    };
+    testCal(exp[end]);
+
+    return 0;
+}
+\end{lstlisting}
+\section{测试结果}
+测试结果一切正常。输出和预期相符：
+
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+----------------------------------------
+括号不匹配
+(3 + 2 * (4 - 1: 
+ILLIGAL
+((5 + 6) * 3) - 4): 
+ILLIGAL
+3 + (4 - 2)): 
+ILLIGAL
+((2)+(2))+5+6*(2)+6): 
+ILLIGAL
+----------------------------------------
+运算符连续使用
+7 --- 2: 
+ILLIGAL
+7 -- 2: 
+9
+4 ** 2: 
+ILLIGAL
+3 + * 2: 
+ILLIGAL
+10 / / 5: 
+ILLIGAL
+(7 +-1)+- 2.5: 
+3.5
+(7 -+1)-+ 2.5: 
+ILLIGAL
+(7 *-1)/- 2: 
+3.5
+(7 -*1)/- 2: 
+ILLIGAL
+----------------------------------------
+以运算符开头或结尾
++ 5 * 3: 
+ILLIGAL
+5 * 3+: 
+ILLIGAL
+7 -: 
+ILLIGAL
+- 7: 
+-7
+* (4 + 5): 
+ILLIGAL
+(4 + 5) *: 
+ILLIGAL
+/ (3 + 2): 
+ILLIGAL
+(3 + 2) /: 
+ILLIGAL
+----------------------------------------
+除数为零
+8 / 0: 
+ILLIGAL
+10 / (3 - 3): 
+ILLIGAL
+15 / (7 - (2 + 5)): 
+ILLIGAL
+----------------------------------------
+括号和负号运算符
+12.3*(-1)/3: 
+-4.1
+(8.12 / -2) /1: 
+-4.06
+10.10 / (2 +- 3): 
+-10.1
+-15 / (7 *-1/-(2 + 5)): 
+-15
+-(2)-(-3): 
+1
+2.3+4*((12)-(-2)): 
+58.3
+(-(-5.2))*(-4.2)+-3/6: 
+-22.34
+----------------------------------------
+使用科学计数法
+8.12e3 / -2: 
+-4060
+10.10e1 / (2 +- 3): 
+-101
+15e-1 / (7 *-1- (2 + 5)): 
+-0.107143
+2e3e4: 
+ILLIGAL
+e5 + 1: 
+ILLIGAL
+1.2e + 3: 
+ILLIGAL
+1 + -: 
+ILLIGAL
+1e: 
+ILLIGAL
+1.2e++3: 
+ILLIGAL
+(2e-) + 3: 
+ILLIGAL
+----------------------------------------
+测试负数、括号和科学计数法的表达式
+1.5e2 + -(3.1E-2): 
+149.969
+-(2*-1.23e4) + -(5.67E+4): 
+-32100
+3 + -1/ -2.1e+3: 
+3.000476
+-3.14e-2: 
+-0.0314
+2.5e2 *1/(-1/ -3.2e1): 
+8000
+----------------------------------------
+复杂测试
+((1e3 - (2e2 + 1e1)) / (3e-2 * (4e3 + -5e2))): 
+7.52381
+(((-5e2 + 6e3) * 3e1) / (2e4 - (3e-2 + -1e-1))): 
+8.249971
+(3e2 - (2e3 + (1e4 / (-5e1 - 2e2)))): 
+-1660
+\end{lstlisting}
+
+我用 \texttt{valgrind} 进行测试，发现没有发生内存泄露。
+\begin{lstlisting}[ 
+    language=c++,
+    basicstyle=\ttfamily,
+    breaklines=true,
+    keywordstyle=\bfseries\color{Blue}, 
+    morekeywords={}, 
+    commentstyle=\itshape\color{black!50!white},
+    stringstyle=\bfseries\color{PineGreen!90!black} 
+    ]
+==226877== 
+==226877== HEAP SUMMARY:
+==226877==     in use at exit: 0 bytes in 0 blocks
+==226877==   total heap usage: 615 allocs, 615 frees, 198,144 bytes allocated
+==226877== 
+==226877== All heap blocks were freed -- no leaks are possible
+==226877== 
+==226877== For lists of detected and suppressed errors, rerun with: -s
+==226877== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)    
+\end{lstlisting}
+
+
+
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
